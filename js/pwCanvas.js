@@ -11,7 +11,8 @@ angular.module('pw.canvas-painter')
       templateUrl: '../templates/canvas.html',
       link: function postLink(scope, elm) {
 
-        var isTouch = !!('ontouchstart' in window);
+
+        var isTouch = (('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (navigator.msMaxTouchPoints > 0));
 
         var PAINT_START = isTouch ? 'touchstart' : 'mousedown';
         var PAINT_MOVE = isTouch ? 'touchmove' : 'mousemove';
