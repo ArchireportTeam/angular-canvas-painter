@@ -1,7 +1,7 @@
 /*!
  * angular-canvas-painter - v0.6.0
  *
- * Copyright (c) 2024, Philipp Wambach
+ * Copyright (c) 2025, Philipp Wambach
  * Released under the MIT license.
  */
 'use strict';
@@ -44,13 +44,25 @@ angular.module('pw.canvas-painter')
       templateUrl: '../templates/canvas.html',
       link: function postLink(scope, elm) {
 
-
+        var isMouse = ('onmousedown' in window);
         var isTouch = (('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (navigator.msMaxTouchPoints > 0));
 
-        var PAINT_START = isTouch ? 'touchstart' : 'mousedown';
-        var PAINT_MOVE = isTouch ? 'touchmove' : 'mousemove';
-        var PAINT_END = isTouch ? 'touchend' : 'mouseup';
+        var PAINT_START = [];
+        var PAINT_MOVE = [];
+        var PAINT_END = [];
 
+        if(isMouse) {
+          PAINT_START.push('mousedown');
+          PAINT_MOVE.push('mousemove');
+          PAINT_END.push('mouseup');
+        }
+
+        if(isTouch) {
+          PAINT_START.push('touchstart');
+          PAINT_MOVE.push('touchmove');
+          PAINT_END.push('touchend');
+        }
+        
         //set default options
         var options = scope.options;
         options.canvasId = options.customCanvasId || 'pwCanvasMain';
@@ -163,7 +175,7 @@ angular.module('pw.canvas-painter')
         };
 
         var setPointFromEvent = function(point, e) {
-          if (isTouch) {
+          if (isTouch && e.changedTouches) {
             point.x = e.changedTouches[0].pageX - getOffset(e.target).left;
             point.y = e.changedTouches[0].pageY - getOffset(e.target).top;
           } else {
@@ -225,7 +237,10 @@ angular.module('pw.canvas-painter')
               }
             });
           }
-          canvasTmp.removeEventListener(PAINT_MOVE, paint, false);
+          PAINT_MOVE.forEach(function(event) {
+            canvasTmp.removeEventListener(event, paint, false);
+          });
+
           ctx.drawImage(canvasTmp, 0, 0);
           ctxTmp.clearRect(0, 0, canvasTmp.width, canvasTmp.height);
           ppts = [];
@@ -233,8 +248,10 @@ angular.module('pw.canvas-painter')
 
         var startTmpImage = function(e) {
           e.preventDefault();
-          canvasTmp.addEventListener(PAINT_MOVE, paint, false);
-
+          PAINT_MOVE.forEach(function(event) {
+            canvasTmp.addEventListener(event, paint, false);
+          });
+          
           setPointFromEvent(point, e);
           ppts.push({
             x: point.x,
@@ -249,8 +266,12 @@ angular.module('pw.canvas-painter')
         };
 
         var initListeners = function() {
-          canvasTmp.addEventListener(PAINT_START, startTmpImage, false);
-          canvasTmp.addEventListener(PAINT_END, copyTmpImage, false);
+          PAINT_START.forEach(function(event) {
+            canvasTmp.addEventListener(event, startTmpImage, false);
+          });
+          PAINT_END.forEach(function(event) {
+            canvasTmp.addEventListener(event, copyTmpImage, false);
+          });
 
           if (!isTouch) {
             var MOUSE_DOWN;
